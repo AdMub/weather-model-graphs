@@ -114,10 +114,11 @@ def create_flat_singlescale_mesh_graph(xy, mesh_node_distance: float):
 
     if nx == 0 or ny == 0:
         raise ValueError(
-            "The given `mesh_node_distance` is too large for the provided coordinates. "
-            f"Got mesh_node_distance={mesh_node_distance}, but the x-range is {range_x} "
-            f"and y-range is {range_y}. Maybe you want to decrease the `mesh_node_distance`"
-            " so that the mesh nodes are spaced closer together?"
+            f"The given `mesh_node_distance` ({mesh_node_distance}) is too large "
+            f"for the total extent of the provided coordinates. "
+            f"The bounding box has an x-extent of {range_x} and a y-extent of {range_y}. "
+            "You must decrease the `mesh_node_distance` so that at least one mesh node "
+            "fits within the coordinate boundaries."
         )
 
     return mesh_graph.create_single_level_2d_mesh_graph(xy=xy, nx=nx, ny=ny)
