@@ -8,6 +8,7 @@ from .base import create_all_graph_components
 def create_keisler_graph(
     coords,
     mesh_node_distance=3,
+    crop_to_convex_hull: bool = False,
     coords_crs: pyproj.crs.CRS | None = None,
     graph_crs: pyproj.crs.CRS | None = None,
     decode_mask: Iterable[bool] | None = None,
@@ -34,6 +35,8 @@ def create_keisler_graph(
     mesh_node_distance: float
         Distance (in x- and y-direction) between created mesh nodes,
         in coordinate system of coords
+    crop_to_convex_hull: bool
+        Whether to crop the generated mesh nodes to the convex hull of the input coords.
     coords_crs: pyproj.crs.CRS or None
         Coordinate Reference System (CRS) of the input `coords`. Must be a
         pyproj.crs.CRS or cartopy.crs.CRS.
@@ -58,7 +61,10 @@ def create_keisler_graph(
     return create_all_graph_components(
         coords=coords,
         m2m_connectivity="flat",
-        m2m_connectivity_kwargs=dict(mesh_node_distance=mesh_node_distance),
+        m2m_connectivity_kwargs=dict(
+            mesh_node_distance=mesh_node_distance,
+            crop_to_convex_hull=crop_to_convex_hull,
+        ),
         g2m_connectivity="within_radius",
         m2g_connectivity="nearest_neighbours",
         g2m_connectivity_kwargs=dict(
@@ -79,6 +85,7 @@ def create_graphcast_graph(
     mesh_node_distance=3,
     level_refinement_factor=3,
     max_num_levels=None,
+    crop_to_convex_hull: bool = False,
     coords_crs: pyproj.crs.CRS | None = None,
     graph_crs: pyproj.crs.CRS | None = None,
     decode_mask: Iterable[bool] | None = None,
@@ -109,6 +116,8 @@ def create_graphcast_graph(
         NOTE: Must be an odd integer >1 to create proper multiscale graph
     max_num_levels: int
         The number of levels of longer-range connections in the mesh graph.
+    crop_to_convex_hull: bool
+        Whether to crop the generated mesh nodes to the convex hull of the input coords.
     coords_crs: pyproj.crs.CRS or None
         Coordinate Reference System (CRS) of the input `coords`. Must be a
         pyproj.crs.CRS or cartopy.crs.CRS.
@@ -137,6 +146,7 @@ def create_graphcast_graph(
             mesh_node_distance=mesh_node_distance,
             level_refinement_factor=level_refinement_factor,
             max_num_levels=max_num_levels,
+            crop_to_convex_hull=crop_to_convex_hull,
         ),
         g2m_connectivity="within_radius",
         m2g_connectivity="nearest_neighbours",
@@ -158,6 +168,7 @@ def create_oskarsson_hierarchical_graph(
     mesh_node_distance=3,
     level_refinement_factor=3,
     max_num_levels=None,
+    crop_to_convex_hull: bool = False,
     coords_crs: pyproj.crs.CRS | None = None,
     graph_crs: pyproj.crs.CRS | None = None,
     decode_mask: Iterable[bool] | None = None,
@@ -193,6 +204,8 @@ def create_oskarsson_hierarchical_graph(
         Refinement factor between grid points and bottom level of mesh hierarchy
     max_num_levels: int
         The number of levels of longer-range connections in the mesh graph.
+    crop_to_convex_hull: bool
+        Whether to crop the generated mesh nodes to the convex hull of the input coords.
     coords_crs: pyproj.crs.CRS or None
         Coordinate Reference System (CRS) of the input `coords`. Must be a
         pyproj.crs.CRS or cartopy.crs.CRS.
@@ -221,6 +234,7 @@ def create_oskarsson_hierarchical_graph(
             mesh_node_distance=mesh_node_distance,
             level_refinement_factor=level_refinement_factor,
             max_num_levels=max_num_levels,
+            crop_to_convex_hull=crop_to_convex_hull,
         ),
         g2m_connectivity="within_radius",
         m2g_connectivity="nearest_neighbours",
