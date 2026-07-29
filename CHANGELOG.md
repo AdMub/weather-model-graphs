@@ -15,6 +15,11 @@ graph-filtering functionality (based on node and edge features), graph
 diagnostics (checking for e.g. unconnected grid nodes) and graph creation
 benchmarks (to support future runtime optimisation work).
 
+### Fixes
+
+- Fix duplicate `coords_crs` condition in `create_all_graph_components` that should check `graph_crs`
+  [\#69](https://github.com/mllam/weather-model-graphs/issues/69)
+
 ### Added
 
 - Add `mesh_layout` argument to mesh graph creation functions, with `rectilinear`
