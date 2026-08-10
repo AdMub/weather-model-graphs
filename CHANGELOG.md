@@ -5,12 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.4.0](https://github.com/mllam/weather-model-graphs/releases/tag/v0.4.0)
+
+This release lays the foundations for introducing new mesh node layouts
+(through the `mesh_layout` argument) and for creating graphs for
+`neural-lam` (by adding `save.neural_lam.torch_tensors` supporting the `v0.1.0`
+`neural-lam` graph format specification). In addition, this release introduces
+graph-filtering functionality (based on node and edge features), graph
+diagnostics (checking for e.g. unconnected grid nodes) and graph creation
+benchmarks (to support future runtime optimisation work).
+
+### Fixes
+
+- Fix duplicate `coords_crs` condition in `create_all_graph_components` that should check `graph_crs`
+  [\#69](https://github.com/mllam/weather-model-graphs/issues/69)
 
 ### Added
 
-- Support for `nx-cugraph` backend by ensuring array-based position math during graph construction
-  [\#62](https://github.com/mllam/weather-model-graphs/pull/62) @AdMub
 - Added a standalone graph consistency checking tool (`wmg.diagnostics.check_graph_consistency`) to ensure structural health, such as verifying all grid nodes successfully connect to the mesh (#42).
 - Add Django-style graph filtering via `filter_graph`, for example to select
   nodes by type (`node__type="mesh"`), edges by component
@@ -19,6 +30,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [\#46](https://github.com/mllam/weather-model-graphs/pull/46), @leifdenby & @Joltsy10
 - Add `__version__` attribute to the package init
   [\#56](https://github.com/mllam/weather-model-graphs/pull/56) @AdMub
+- Add runtime and scaling benchmarks with CLI,
+  [\#117](https://github.com/mllam/weather-model-graphs/pull/117), @leifdenby
+- Add `wmg.save.to_torch_tensors_on_disk` to save graphs in the neural-lam
+  tensor-on-disk format (graph storage spec v0.1.0), tested against
+  neural-lam's own graph validator. `wmg.save` is restructured into a package
+  (`save.base`, `save.neural_lam.torch_tensors`, `save.neural_lam.deprecated`)
+  with all existing entrypoints re-exported unchanged.
+  [\#123](https://github.com/mllam/weather-model-graphs/pull/123), @prajwal-tech07
+- Add support for writing benchmarking results to json,
+  [\#140](https://github.com/mllam/weather-model-graphs/pull/140),
+  @yuvraajnarula & @leifdenby
+
+### Deprecated
+
+- `wmg.save.to_pyg` now emits a `DeprecationWarning` and will not be
+  maintained going forward; use `wmg.save.to_torch_tensors_on_disk` instead.
+  [\#123](https://github.com/mllam/weather-model-graphs/pull/123), @prajwal-tech07
+
+### Maintenance
+
+- Improve isolation of README example tests by executing each code block in an isolated namespace.
+  [\#65](https://github.com/mllam/weather-model-graphs/pull/64) @Shristi-Goel
+- add `nb-clean` to `pre-commit` config to ensure that committed jupyter
+  notebooks have empty output cells (to keep notebook filesizes at minimum),
+  [\#146](https://github.com/mllam/weather-model-graphs/pull/146), @leifdenby
 
 ## [v0.3.0](https://github.com/mllam/weather-model-graphs/releases/tag/v0.3.0)
 
@@ -62,9 +98,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update github CI actions to fix failing build and deploy of jupyterbook
   [\#49](https://github.com/mllam/weather-model-graphs/pull/49),
   [\#54](https://github.com/mllam/weather-model-graphs/pull/54), @leifdenby
-
-- Improve isolation of README example tests by executing each code block in an isolated namespace.
-  [#65](https://github.com/mllam/weather-model-graphs/pull/64) @Shristi-Goel
 
 ## [v0.2.0](https://github.com/mllam/weather-model-graphs/releases/tag/v0.2.0)
 
