@@ -144,6 +144,8 @@ def create_all_graph_components(
 
     mesh_layout_kwargs (for mesh_layout="rectilinear"):
     - mesh_node_spacing: float, distance between mesh nodes in coordinate units.
+    - crop_to_grid_nodes_convex_hull: bool, crop outside the convex hull of the
+      grid coordinates, allowing a buffer of one mesh node spacing.
     - refinement_factor: int, refinement factor between levels
       (for multi-level and hierarchical mesh graphs, default: 3)
     - max_num_refinement_levels: int, maximum number of mesh levels
@@ -215,7 +217,7 @@ def create_all_graph_components(
     ), "Grid node coordinates should be given as an array of shape [num_grid_nodes, 2]."
 
     # Translate between coordinate crs and crs to use for graph creation
-    if coords_crs is None and coords_crs is None:
+    if coords_crs is None and graph_crs is None:
         logger.debug(
             "No `coords_crs` given: Assuming `coords` contains in-projection Cartesian coordinates."
         )
@@ -289,29 +291,26 @@ def create_all_graph_components(
             "Currently only 'rectilinear' is implemented."
         )
 
-    # --- CONVEX HULL PRUNING INJECTION ---
-    if mesh_layout_kwargs and mesh_layout_kwargs.get(
-        "crop_to_grid_nodes_convex_hull", False
-    ):
-
-        # TODO: Support crop_to_grid_nodes_convex_hull for 'flat_multiscale' graphs.
-        # Currently, `create_flat_multiscale_from_coordinates` (in mesh/connectivity/flat.py)
-        # merges hierarchy levels by reshaping the node array assuming a full (nx, ny, 2)
-        # rectangular grid and striding over indices. To support cropping here, that merging
-        # logic must first be refactored to be position-based (spatial) rather than index-based.
+    # Keep a buffer around the hull so boundary grid nodes retain g2m connections.
+    if mesh_layout_kwargs.get("crop_to_grid_nodes_convex_hull", False):
+        # flat_multiscale still assumes a complete rectangular mesh when merging levels.
+        # See #145 for the position-based refactor.
         if m2m_connectivity == "flat_multiscale":
             raise ValueError(
-                "crop_to_grid_nodes_convex_hull is currently not supported for 'flat_multiscale' "
-                "(GraphCast) architectures because they assume a regular rectangular grid."
+                "crop_to_grid_nodes_convex_hull is currently not supported for "
+                "'flat_multiscale' (GraphCast) architectures because they assume "
+                "a regular rectangular grid."
             )
 
-        from scipy.spatial import Delaunay
-
-        hull = Delaunay(xy)
+        hull = scipy.spatial.ConvexHull(xy)
+        normals = hull.equations[:, :-1]
+        offsets = hull.equations[:, -1]
 
         def _crop(g):
             outside = [
-                n for n, pos in g.nodes(data="pos") if hull.find_simplex(pos) < 0
+                node
+                for node, pos in g.nodes(data="pos")
+                if np.any(normals @ pos + offsets > mesh_node_spacing)
             ]
             g.remove_nodes_from(outside)
             return g
@@ -320,7 +319,6 @@ def create_all_graph_components(
             G_mesh_coords = [_crop(g) for g in G_mesh_coords]
         else:
             G_mesh_coords = _crop(G_mesh_coords)
-    # -------------------------------------
 
     # -----------------------------------------------------------------------
     # Step 2: Connectivity creation — converts mesh primitives to directed graph
@@ -386,7 +384,7 @@ def create_all_graph_components(
             graph.edges[edge]["component"] = name
 
     if return_components:
-        # Because merging to a single graph and then splitting again leads to changes in node indexing when converting to `pyg.Data` objects (this in part is due to the to `m2g` and `g2m` having a different set of grid nodes) the ability to return the graph components (`g2m`, `m2m` and `m2g`) has been added here. See https://github.com/mllam/weather-model-graphs/pull/34#issuecomment-2507980752 for details
+        # Because merging to a single graph and then splitting again leads to changes in node indexing when converting to `pyg.Data` objects (this in part is due to the to `m2g` and `g2m` having a different set of grid nodes) the ability to return the graph components (`g2m`, `m2m` and `m2g`) has been added here. See https\://github.com/mllam/weather-model-graphs/pull/34#issuecomment-2507980752 for details
         # Give each component unique ids
         graph_components = {
             comp_name: replace_node_labels_with_unique_ids(subgraph)

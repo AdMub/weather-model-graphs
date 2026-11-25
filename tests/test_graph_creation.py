@@ -204,7 +204,7 @@ def test_create_decode_mask(kind):
     xy = test_utils.create_fake_irregular_coords(100)
     fn_name = f"create_{kind}_graph"
     fn = getattr(wmg.create.archetype, fn_name)
-    # ~= 20 mesh nodes in bottom layer in each direction
+    # \~= 20 mesh nodes in bottom layer in each direction
     mesh_node_distance = 0.05
 
     unfiltered_graph = fn(coords=xy, mesh_node_distance=mesh_node_distance)
@@ -327,3 +327,48 @@ def test_convex_hull_cropping_graphcast_error():
             mesh_node_distance=1,
             crop_to_grid_nodes_convex_hull=True,
         )
+
+
+def test_convex_hull_cropping_preserves_boundary_g2m_connections():
+    # Circular grid to exercise connections near the hull boundary.
+    axis = np.arange(-20, 21)
+    xx, yy = np.meshgrid(axis, axis)
+    coords = np.column_stack((xx.ravel(), yy.ravel()))
+    coords = coords[np.sum(coords**2, axis=1) <= 20**2]
+
+    kwargs = dict(
+        coords=coords,
+        mesh_node_distance=4,
+        return_components=True,
+    )
+    uncropped = wmg.create.archetype.create_keisler_graph(**kwargs)
+    cropped = wmg.create.archetype.create_keisler_graph(
+        **kwargs,
+        crop_to_grid_nodes_convex_hull=True,
+    )
+
+    def g2m_edges_by_position(components):
+        g2m = components["g2m"]
+        return {
+            (
+                tuple(g2m.nodes[source]["pos"]),
+                tuple(g2m.nodes[target]["pos"]),
+            )
+            for source, target in g2m.edges
+        }
+
+    def connected_grid_positions(components):
+        g2m = components["g2m"]
+        return {
+            tuple(g2m.nodes[node]["pos"])
+            for node, data in g2m.nodes(data=True)
+            if data["type"] == "grid" and g2m.out_degree(node) > 0
+        }
+
+    grid_positions = {tuple(pos) for pos in coords}
+    assert connected_grid_positions(uncropped) == grid_positions
+    assert connected_grid_positions(cropped) == grid_positions
+    assert g2m_edges_by_position(cropped) == g2m_edges_by_position(uncropped)
+
+    # Pruning should still remove nodes that are well beyond the hull.
+    assert cropped["m2m"].number_of_nodes() < uncropped["m2m"].number_of_nodes()
